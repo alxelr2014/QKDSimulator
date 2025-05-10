@@ -9,6 +9,9 @@ class QuantumChannel:
     def transmit(self,signals:QuantumSignal): # returns the signal at the receiver
         raise NotImplementedError("Subclass of QunatumChannel transmits.")
 
+class Fiber(QuantumChannel):
+    def transmit(self, signals):
+        return signals
     
 class coh_BeamSplitter(QuantumChannel):
     def __init__(self, transmitivity):
@@ -32,7 +35,7 @@ class coh_BeamSplitter(QuantumChannel):
         alpha_out = np.sqrt(eta)*alpha - 1j*beta*np.sqrt(1-eta)
         beta_out = -1j* np.sqrt(1-eta)*alpha +beta*np.sqrt(eta)
 
-        return np.array([QuantumSignal(SignalType.COHERENT, alpha_out), QuantumSignal(SignalType.COHERENT,beta_out)])
+        return np.array([Coherent(alpha_out), Coherent(beta_out)])
         
     
 class coh_MachZender(QuantumChannel):
@@ -59,4 +62,4 @@ class coh_MachZender(QuantumChannel):
         alpha_out = 1/2* ((ephi - 1)*alpha - 1j*(1+ephi)*beta)
         beta_out = 1/2* ((1-ephi)*beta - 1j*(1+ephi)*alpha)
 
-        return np.array([QuantumSignal(SignalType.COHERENT, alpha_out), QuantumSignal(SignalType.COHERENT,beta_out)])
+        return np.array([Coherent(alpha_out), QuantumSignal(Coherent,beta_out)])

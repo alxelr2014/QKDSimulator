@@ -23,10 +23,10 @@ class QuantumSignal:
 
 class Coherent(QuantumSignal):
     def __init__(self, alpha):
-        param = {"alpha":alpha}
+        param = {'alpha':alpha}
         super().__init__(SignalType.COHERENT, param)
     
     def inner_product(self,state):
         pass
     def inner_product0(self):
-        return np.exp(-1/2*(self.param['alpha'])**2)
+        return np.exp(-1/2*np.abs((self.param['alpha']))**2)

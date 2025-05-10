@@ -5,7 +5,7 @@ from quantum_measurement import *
 from qkd_protocol import *
 
 
-class COW(QKDProtocol):
+class BB84(QKDProtocol):
     def __init__(self,params):
         self.alpha = params['alpha']
         self.decoy_rate = params['decoy_rate']
@@ -53,5 +53,3 @@ class COW(QKDProtocol):
             
         return signals
     
-s = COW({'alpha':1,'decoy_rate':0.2,'qchannel':QuantumChannel(),'transmitivity':0.9})
-s.run_protocol(5)

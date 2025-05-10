@@ -10,7 +10,9 @@ class QuantumMeasurement:
         raise NotImplementedError("Subclass of QuantumMeasurement measures.")
 
 class SinglePhotonMeasurement(QuantumMeasurement):
+    def __init__(self):
+        super().__init__({})
     def measure(self,signal:QuantumSignal):
         P0 = signal.inner_product0()
-        l = np.random.rand()[0]
+        l = float(np.random.rand())
         return l > P0
