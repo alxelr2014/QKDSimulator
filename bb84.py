@@ -7,49 +7,62 @@ from qkd_protocol import *
 
 class BB84(QKDProtocol):
     def __init__(self,params):
-        self.alpha = params['alpha']
+        self.intensities = np.array([params['alpha'], params['mu']])
         self.decoy_rate = params['decoy_rate']
         self.qchannel = params['qchannel']
-        self.transmitivity = params['transmitivity']
 
     def run_protocol(self,params):
         num_signal = params['num_signal']
         decoy = np.random.rand(num_signal) <= self.decoy_rate
-        bits = np.random.rand(num_signal) <= 1/2
-        signals = self.signal_generation(decoy,bits,num_signal)
+        pol_basis = np.random.rand(num_signal) <= 1/2
+        polarization = np.random.rand(num_signal) <= 1/2
+        phi = np.random.rand(num_signal)*2*np.pi
+        signals = self.signal_generation(decoy,pol_basis,polarization,phi,num_signal)
+
         seq_trans = np.vectorize(self.qchannel.transmit)
         received = seq_trans(signals)
 
-        d_counter = np.zeros(num_signal)
-        m0_counter = np.zeros(num_signal)
-        m1_counter = np.zeros(num_signal)
-        prev_mline = Coherent(0)
+        counter = np.zeros(num_signal,dtype=object)
+        mpol_basis = np.random.rand(num_signal) <= 1/2
         for _ in range(num_signal):
-            dmlines = coh_BeamSplitter(self.transmitivity).transmit(received[_])
-            data_line = dmlines[0]
-            monitor_line = dmlines[1]
-            d_counter[_] = SinglePhotonMeasurement().measure(data_line)
-            pre_measure_mlines = coh_MachZender(0).transmit(np.array([prev_mline,monitor_line]))
-            m0_counter[_] = SinglePhotonMeasurement().measure(pre_measure_mlines[0])
-            m1_counter[_] = SinglePhotonMeasurement().measure(pre_measure_mlines[1])
-            prev_mline = monitor_line
-        
-        return self.sift_pe(decoy,bits,d_counter,m0_counter,m1_counter)
-
-    def sift_pe(decoy,bits,d_counter,m0_counter,m1_counter):
-        pass
-
-    def signal_generation(self,decoy,bits,num_signal):
-        signals = np.empty(2*num_signal,dtype=QuantumSignal)
-        for _ in range(num_signal):
-            if bits[_]: 
-                signals[2*_] =QuantumSignal(SignalType.COHERENT,self.alpha)
+            if mpol_basis[_]:
+                mpol = PolarizeType.H
             else:
-                signals[2*_] = QuantumSignal(SignalType.COHERENT,0)
-            if decoy[_]:
-                signals[2*_+1] =QuantumSignal(SignalType.COHERENT,0)
-            else: 
-                signals[2*_ + 1] = QuantumSignal(SignalType.COHERENT,self.alpha)
-            
+                mpol = PolarizeType.D
+            counter[_] = PhotonCounter().measure(received[_],Polarization(mpol))
+        
+        # print(decoy.astype(int))
+        # print(pol_basis.astype(int))
+        # print(polarization.astype(int))
+        # print(phi.astype(float))
+        # print(mpol_basis.astype(int))
+        # print(counter)
+
+        alice_key, bob_key = self.sift(decoy,pol_basis,polarization,counter,mpol_basis)
+        parameters = self.param_est()
+        return alice_key,bob_key,parameters
+
+    def sift(self,decoy,pol_basis,polarization,counter,mpol_basis):
+        return 0,0
+
+    def param_est(self,):
+        return 0
+
+    def signal_generation(self,decoy,pol_basis,pol,phi,num_signal):
+        signals = np.empty(num_signal,dtype=QuantumSignal)
+        for _ in range(num_signal):
+            if pol_basis[_]:
+                if pol[_]:
+                    pol_type = PolarizeType.A
+                else:
+                    pol_type = PolarizeType.D
+            else:
+                if pol[_]:
+                    pol_type = PolarizeType.V
+                else:
+                    pol_type = PolarizeType.H
+            signals[_] = Coherent(np.exp(1j*phi[_])*self.intensities[(int) (decoy[_])],pol_type)          
         return signals
     
+s = BB84({'alpha':1,'mu' : 0.1, 'decoy_rate':0.1, 'qchannel':Fiber({})})
+s.run_protocol(params={'num_signal':5})

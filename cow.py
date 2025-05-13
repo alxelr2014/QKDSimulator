@@ -28,30 +28,30 @@ class COW(QKDProtocol):
             dmlines = coh_BeamSplitter(self.transmitivity).transmit(received[_])
             data_line = dmlines[0]
             monitor_line = dmlines[1]
-            d_counter[_] = SinglePhotonMeasurement().measure(data_line)
+            d_counter[_] = PhotonDetector().measure(data_line)
             pre_measure_mlines = coh_MachZender(0).transmit(np.array([prev_mline,monitor_line]))
-            m0_counter[_] = SinglePhotonMeasurement().measure(pre_measure_mlines[0])
-            m1_counter[_] = SinglePhotonMeasurement().measure(pre_measure_mlines[1])
+            m0_counter[_] = PhotonDetector().measure(pre_measure_mlines[0])
+            m1_counter[_] = PhotonDetector().measure(pre_measure_mlines[1])
             prev_mline = monitor_line
         
         return self.sift_pe(decoy,bits,d_counter,m0_counter,m1_counter)
 
-    def sift_pe(decoy,bits,d_counter,m0_counter,m1_counter):
+    def sift_pe(self,decoy,bits,d_counter,m0_counter,m1_counter):
         pass
 
     def signal_generation(self,decoy,bits,num_signal):
         signals = np.empty(2*num_signal,dtype=QuantumSignal)
         for _ in range(num_signal):
             if bits[_]: 
-                signals[2*_] =QuantumSignal(SignalType.COHERENT,self.alpha)
+                signals[2*_] =Coherent(self.alpha)
             else:
-                signals[2*_] = QuantumSignal(SignalType.COHERENT,0)
+                signals[2*_] = Coherent(0)
             if decoy[_]:
-                signals[2*_+1] =QuantumSignal(SignalType.COHERENT,0)
+                signals[2*_+1] =Coherent(0)
             else: 
-                signals[2*_ + 1] = QuantumSignal(SignalType.COHERENT,self.alpha)
+                signals[2*_ + 1] = Coherent(self.alpha)
             
         return signals
     
-s = COW({'alpha':1,'decoy_rate':0.2,'qchannel':QuantumChannel(),'transmitivity':0.9})
-s.run_protocol(5)
+s = COW({'alpha':1,'decoy_rate':0.2,'qchannel':Fiber({}),'transmitivity':0.9})
+s.run_protocol({'num_signal':10})

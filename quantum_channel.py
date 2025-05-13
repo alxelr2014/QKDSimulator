@@ -62,4 +62,4 @@ class coh_MachZender(QuantumChannel):
         alpha_out = 1/2* ((ephi - 1)*alpha - 1j*(1+ephi)*beta)
         beta_out = 1/2* ((1-ephi)*beta - 1j*(1+ephi)*alpha)
 
-        return np.array([Coherent(alpha_out), QuantumSignal(Coherent,beta_out)])
+        return np.array([Coherent(alpha_out), Coherent(beta_out)])

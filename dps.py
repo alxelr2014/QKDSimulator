@@ -26,17 +26,18 @@ class DPS(QKDProtocol):
             curr_line = cd_lines[0]
             del_lin = cd_lines[1]
             measure_lines = coh_BeamSplitter(0.5).transmit(np.array([curr_line,prev_del_line]))
-            m0_counter[_] = SinglePhotonMeasurement().measure(measure_lines[0])
-            m1_counter[_] = SinglePhotonMeasurement().measure(measure_lines[1])
+            m0_counter[_] = PhotonDetector().measure(measure_lines[0])
+            m1_counter[_] = PhotonDetector().measure(measure_lines[1])
             prev_del_line = del_lin
         
         alice_key, bob_key = self.sift(bits,m0_counter,m1_counter)
-        print(bits.astype(int))
-        print(m0_counter.astype(int))
-        print(m1_counter.astype(int))
-        print(alice_key.astype(int))
-        print(bob_key.astype(int))
         parameters = self.param_est()
+
+        # print(bits.astype(int))
+        # print(m0_counter.astype(int))
+        # print(m1_counter.astype(int))
+        # print(alice_key.astype(int))
+        # print(bob_key.astype(int))
 
         return alice_key,bob_key,parameters
 
@@ -45,9 +46,6 @@ class DPS(QKDProtocol):
         # note the the first clicks are dont cares
         # TODO: is that true?
 
-        # print(m0_counter.astype(int))
-        # print(m1_counter.astype(int))
-        # print(bits.astype(int))
         num_clicks = bob_message.sum()-bob_message[0]
         if num_clicks <= 0:
             raise RuntimeError("DPS protocol produced no keys. Aborted!")
@@ -55,8 +53,6 @@ class DPS(QKDProtocol):
             
         alice_key = np.full(num_clicks,-1)
         bob_key = np.full(num_clicks,-1)
-        # print(bob_message.astype(int))
-        # print(bob_message.sum())
         key_ind = 0
         for _ in range(1,len(bob_message)):
             if bob_message[_]:
