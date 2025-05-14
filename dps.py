@@ -70,7 +70,3 @@ class DPS(QKDProtocol):
         for _ in range(num_signal):
             signals[_] =Coherent((-1)**(bits[_])*self.alpha)
         return signals
-
-
-s = DPS({'alpha':0.5,'qchannel':Fiber({})})
-s.run_protocol(params={'num_signal':200})

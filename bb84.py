@@ -38,12 +38,24 @@ class BB84(QKDProtocol):
         # print(mpol_basis.astype(int))
         # print(counter)
 
-        alice_key, bob_key = self.sift(decoy,pol_basis,polarization,counter,mpol_basis)
+        alice_key, bob_key = self.sift(decoy,pol_basis,polarization,counter,mpol_basis,num_signal)
+
+        # print(alice_key.astype(int))
+        # print(bob_key.astype(int))
         parameters = self.param_est()
         return alice_key,bob_key,parameters
 
-    def sift(self,decoy,pol_basis,polarization,counter,mpol_basis):
-        return 0,0
+    def sift(self,decoy,pol_basis,polarization,counter,mpol_basis,num_signal):
+        alice_key = np.empty(num_signal)
+        bob_key = np.empty(num_signal)
+        j =0 
+        for _ in range(num_signal):
+            if not decoy[_]:
+                if pol_basis[_] == mpol_basis[_]:
+                    alice_key[j] = polarization[_]
+                    bob_key[j] = counter[_][1] > 0
+                    j += 1
+        return alice_key[:j],bob_key[:j]
 
     def param_est(self,):
         return 0
@@ -63,6 +75,3 @@ class BB84(QKDProtocol):
                     pol_type = PolarizeType.H
             signals[_] = Coherent(np.exp(1j*phi[_])*self.intensities[(int) (decoy[_])],pol_type)          
         return signals
-    
-s = BB84({'alpha':1,'mu' : 0.1, 'decoy_rate':0.1, 'qchannel':Fiber({})})
-s.run_protocol(params={'num_signal':5})
