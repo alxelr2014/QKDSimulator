@@ -45,7 +45,7 @@ class QuantumSignal:
         pass
 
 class Coherent(QuantumSignal):
-    def __init__(self, alpha, pol = Polarization(PolarizeType.H)):
+    def __init__(self, alpha, pol = PolarizeType.H):
         param = {'alpha':alpha, 'polarization': Polarization(pol)}
         super().__init__(SignalType.COHERENT, param)
 

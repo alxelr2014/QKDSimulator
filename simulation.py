@@ -38,61 +38,75 @@
 #     sim.schedule_event(Event(time=10, action=example_event, description="First example event"))
 #     sim.schedule_event(Event(time=5, action=example_event, description="Second example event"))
 #     sim.run(until=20)
-
+from qkd_protocol import *
 from bb84 import *
 from cow import *
 from dps import *
 import numpy as np
 import matplotlib.pyplot as plt
 
-def bb84decoy(num_sim,num_signal):
-    alphas = np.linspace(0.1,2.1,10)
-    rates = np.empty(np.size(alphas))
-    for i in range(np.size(alphas)):
-        rates[i] = 0
-        for j in range(num_sim):
-            s = BB84({'alpha':alphas[i],'mu' : 0.1, 'decoy_rate':0.2, 'qchannel':Fiber({})})
-            akey= s.run_protocol(params={'num_signal':num_signal})[0]
-            rates[i] += np.size(akey)/num_signal
-        rates[i] /= num_sim
-    plt.ylabel('Rate')
-    plt.xlabel("Intensity (alpha)")
-    plt.title('BB84 Decoy')
-    plt.plot(alphas,rates)
-    plt.show()
 
-
-def cowqdk(num_sim, num_signal):
-    alphas = np.linspace(0.1,2.1,100)
-    rates = np.empty(np.size(alphas))
-    for i in range(np.size(alphas)):
-        rates[i] = 0
-        for j in range(num_sim):
-            s = COW({'alpha':alphas[i], 'decoy_rate':0.2, 'qchannel':Fiber({}),'transmitivity':0.9})
-            akey= s.run_protocol({'num_signal':num_signal})[0]
-            rates[i] += np.size(akey)/num_signal
-        rates[i] /= num_sim
-    plt.ylabel('Rate')
-    plt.xlabel("Intensity (alpha)")
-    plt.title('COW')
-    plt.plot(alphas,rates)
-    plt.show()
-   
-def dpsqkd(num_sim, num_signal):
-    alphas = np.linspace(0.1,2.1,10)
-    rates = np.empty(np.size(alphas))
-    for i in range(np.size(alphas)):
-        rates[i] = 0
-        for j in range(num_sim):
-            s = DPS({'alpha':alphas[i],'qchannel':Fiber({})})
-            akey= s.run_protocol(params={'num_signal':num_signal})[0]
-            rates[i] += np.size(akey)/num_signal
-        rates[i] /= num_sim
-    plt.ylabel('Rate')
-    plt.xlabel("Intensity (alpha)")
-    plt.title('COW')
-    plt.plot(alphas,rates)
-    plt.show()
+class Simulation:
+    def __init__(self,protocol : QKDProtocol,num_signal = 100,frac = 0.7):
+        self.protocol = protocol
+        self.num_signal = num_signal
+        self.frac = frac
+    
+    def run(self):
+        akey,bkey, parest = self.protocol.run_protocol(self.num_signal,self.frac)
+        return akey,bkey,parest
     
 
-cowqdk(100,500)
+s = Simulation(BB84({'alpha':1,'mu' : 0.1, 'decoy_rate':0.2, 'qchannel':Fiber({})}))
+print("{}".format("\n".join(str(el) for el in s.run())))
+
+# def bb84decoy(num_sim,num_signal):
+#     alphas = np.array([2]) #np.linspace(0.1,2.1,10)
+#     rates = np.empty(np.size(alphas))
+#     for i in range(np.size(alphas)):
+#         rates[i] = 0
+#         for j in range(num_sim):
+#             s = BB84({'alpha':alphas[i],'mu' : 0.1, 'decoy_rate':0.2, 'qchannel':Fiber({})})
+#             akey= s.run_protocol(num_signal})[0]
+#             rates[i] += np.size(akey)/num_signal
+#         rates[i] /= num_sim
+#     plt.ylabel('Rate')
+#     plt.xlabel("Intensity (alpha)")
+#     plt.title('BB84 Decoy')
+#     plt.plot(alphas,rates)
+#     plt.show()
+
+
+# def cowqdk(num_sim, num_signal):
+#     alphas = np.array([1]) # np.linspace(0.1,2.1,100)
+#     rates = np.empty(np.size(alphas))
+#     for i in range(np.size(alphas)):
+#         rates[i] = 0
+#         for j in range(num_sim):
+#             s = COW({'alpha':alphas[i], 'decoy_rate':0.2, 'qchannel':Fiber({}),'transmitivity':0.9})
+#             akey= s.run_protocol({'num_signal':num_signal})[0]
+#             rates[i] += np.size(akey)/num_signal
+#         rates[i] /= num_sim
+#     plt.ylabel('Rate')
+#     plt.xlabel("Intensity (alpha)")
+#     plt.title('COW')
+#     plt.plot(alphas,rates)
+#     plt.show()
+   
+# def dpsqkd(num_sim, num_signal):
+#     alphas = np.linspace(0.1,2.1,10)
+#     rates = np.empty(np.size(alphas))
+#     for i in range(np.size(alphas)):
+#         rates[i] = 0
+#         for j in range(num_sim):
+#             s = DPS({'alpha':alphas[i],'qchannel':Fiber({})})
+#             akey= s.run_protocol(params={'num_signal':num_signal})[0]
+#             rates[i] += np.size(akey)/num_signal
+#         rates[i] /= num_sim
+#     plt.ylabel('Rate')
+#     plt.xlabel("Intensity (alpha)")
+#     plt.title('COW')
+#     plt.plot(alphas,rates)
+#     plt.show()
+    
+

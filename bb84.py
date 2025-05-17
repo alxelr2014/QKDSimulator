@@ -11,8 +11,7 @@ class BB84(QKDProtocol):
         self.decoy_rate = params['decoy_rate']
         self.qchannel = params['qchannel']
 
-    def run_protocol(self,params):
-        num_signal = params['num_signal']
+    def run_protocol(self,num_signal,frac):
         decoy = np.random.rand(num_signal) <= self.decoy_rate
         pol_basis = np.random.rand(num_signal) <= 1/2
         polarization = np.random.rand(num_signal) <= 1/2
@@ -25,7 +24,7 @@ class BB84(QKDProtocol):
         counter = np.zeros(num_signal,dtype=object)
         mpol_basis = np.random.rand(num_signal) <= 1/2
         for _ in range(num_signal):
-            if mpol_basis[_]:
+            if not mpol_basis[_]:
                 mpol = PolarizeType.H
             else:
                 mpol = PolarizeType.D
@@ -42,8 +41,7 @@ class BB84(QKDProtocol):
 
         # print(alice_key.astype(int))
         # print(bob_key.astype(int))
-        parameters = self.param_est()
-        return alice_key,bob_key,parameters
+        return self.param_est(alice_key,bob_key,frac)
 
     def sift(self,decoy,pol_basis,polarization,counter,mpol_basis,num_signal):
         alice_key = np.empty(num_signal)
@@ -57,8 +55,8 @@ class BB84(QKDProtocol):
                     j += 1
         return alice_key[:j],bob_key[:j]
 
-    def param_est(self,):
-        return 0
+    # def param_est(self,):
+    #     pass
 
     def signal_generation(self,decoy,pol_basis,pol,phi,num_signal):
         signals = np.empty(num_signal,dtype=QuantumSignal)

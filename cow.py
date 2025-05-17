@@ -12,8 +12,7 @@ class COW(QKDProtocol):
         self.qchannel = params['qchannel']
         self.transmitivity = params['transmitivity']
 
-    def run_protocol(self,params):
-        num_signal = params['num_signal']
+    def run_protocol(self,num_signal,frac):
         decoy = np.random.rand(num_signal) <= self.decoy_rate
         bits = np.random.rand(num_signal) <= 1/2
         signals = self.signal_generation(decoy,bits,num_signal)
@@ -49,8 +48,7 @@ class COW(QKDProtocol):
         # print(bob_key.astype(int))
         # print(np.logical_xor(alice_key,bob_key).astype(int))
         # print(np.sum(np.logical_xor(alice_key,bob_key)))
-        parameters = self.param_est(decoy,bits,d_counter,m1_counter)
-        return alice_key,bob_key,parameters
+        return self.param_est(alice_key,bob_key,frac)
 
     def sift(self,decoy,bits,d_counter):
         num_key_bits = np.size(decoy) - np.sum(decoy)
@@ -66,8 +64,8 @@ class COW(QKDProtocol):
 
 
 
-    def param_est(self,decoy,bits,d_counter,m1_counter):
-        return 0
+    # def param_est(self,decoy,bits,d_counter,m1_counter):
+    #     return 0
 
     def signal_generation(self,decoy,bits,num_signal):
         signals = np.empty(2*num_signal,dtype=QuantumSignal)

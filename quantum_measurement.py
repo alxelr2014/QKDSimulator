@@ -49,7 +49,8 @@ class PhotonCounter(QuantumMeasurement):
                 if n > 50:
                     return n,m
             return n,m
-
+# for i in range(3):
+#     print(PhotonCounter().measure(Coherent(4,PolarizeType.D), Polarization(PolarizeType.A)))
 # def triflatify(n):
 #     k = (int)(np.floor(-1/2 + np.sqrt(1/4 + 2*n)))
 #     t = ((k)*(k+1))//2

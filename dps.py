@@ -10,8 +10,7 @@ class DPS(QKDProtocol):
         self.alpha = params['alpha']
         self.qchannel = params['qchannel']
 
-    def run_protocol(self,params):
-        num_signal = params['num_signal']
+    def run_protocol(self,num_signal,frac):
         bits = np.random.rand(num_signal) <= 1/2
         signals = self.signal_generation(bits,num_signal)
         seq_trans = np.vectorize(self.qchannel.transmit)
@@ -31,7 +30,6 @@ class DPS(QKDProtocol):
             prev_del_line = del_lin
         
         alice_key, bob_key = self.sift(bits,m0_counter,m1_counter)
-        parameters = self.param_est()
 
         # print(bits.astype(int))
         # print(m0_counter.astype(int))
@@ -39,7 +37,7 @@ class DPS(QKDProtocol):
         # print(alice_key.astype(int))
         # print(bob_key.astype(int))
 
-        return alice_key,bob_key,parameters
+        return self.param_est(alice_key,bob_key,frac)
 
     def sift(self,bits,m0_counter,m1_counter):
         bob_message = np.logical_or(m0_counter, m1_counter)
@@ -61,8 +59,8 @@ class DPS(QKDProtocol):
                 key_ind += 1
         return alice_key,bob_key
  
-    def param_est(self,):
-        pass
+    # def param_est(self,):
+    #     pass
 
 
     def signal_generation(self,bits,num_signal):
