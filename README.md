@@ -1,5 +1,4 @@
 # TODO List
-1- Parameter Estimation for each protocol
 2- Loss and noisy channels
 3- Classical post-processing protocols
 4- Plots (rate vs ?)

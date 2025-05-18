@@ -6,17 +6,21 @@ from qkd_protocol import *
 
 
 class DPS(QKDProtocol):
-    def __init__(self,params):
-        self.alpha = params['alpha']
-        self.qchannel = params['qchannel']
+    def __init__(self,):
+        pass
 
-    def run_protocol(self,num_signal,frac):
+    def signal_generation(self,params):
+        num_signal = params['num_signal']
+        alpha = params['alpha']
         bits = np.random.rand(num_signal) <= 1/2
-        signals = self.signal_generation(bits,num_signal)
-        seq_trans = np.vectorize(self.qchannel.transmit)
-        received = seq_trans(signals)
+        signals = np.empty(num_signal,dtype=QuantumSignal)
+        for _ in range(num_signal):
+            signals[_] =Coherent((-1)**(bits[_])*alpha)
+        return {'signals':signals,'abits':bits}
 
-
+    def detection(self,params):
+        received= params['received']
+        num_signal = params['num_signal']
         m0_counter = np.zeros(num_signal)
         m1_counter = np.zeros(num_signal)
         prev_del_line = Coherent(0)
@@ -28,6 +32,14 @@ class DPS(QKDProtocol):
             m0_counter[_] = PhotonDetector().measure(measure_lines[0])
             m1_counter[_] = PhotonDetector().measure(measure_lines[1])
             prev_del_line = del_lin
+        return {'m0_counter' : m0_counter, 'm1_counter': m1_counter}
+
+    def run_protocol(self,num_signal,frac):
+        
+        seq_trans = np.vectorize(self.qchannel.transmit)
+        received = seq_trans(signals)
+
+
         
         alice_key, bob_key = self.sift(bits,m0_counter,m1_counter)
 
@@ -39,11 +51,13 @@ class DPS(QKDProtocol):
 
         return self.param_est(alice_key,bob_key,frac)
 
-    def sift(self,bits,m0_counter,m1_counter):
+    def sift(self,aparams,bparams):
+        abits = aparams['abits']
+        m0_counter = bparams['m0_counter']
+        m1_counter = bparams['m1_counter']
         bob_message = np.logical_or(m0_counter, m1_counter)
         # note the the first clicks are dont cares
         # TODO: is that true?
-
         num_clicks = bob_message.sum()-bob_message[0]
         if num_clicks <= 0:
             raise RuntimeError("DPS protocol produced no keys. Aborted!")
@@ -54,17 +68,16 @@ class DPS(QKDProtocol):
         key_ind = 0
         for _ in range(1,len(bob_message)):
             if bob_message[_]:
-                alice_key[key_ind] = 1- (bits[_] ^ bits[_-1])
+                alice_key[key_ind] = 1- (abits[_] ^ abits[_-1])
                 bob_key[key_ind] = 1 - m0_counter[_]
                 key_ind += 1
-        return alice_key,bob_key
+
+        return {'akey': alice_key, 'bkey': bob_key}
+    
+    
+    def param_est(self,params):
+        return super().param_est(params)
  
     # def param_est(self,):
     #     pass
 
-
-    def signal_generation(self,bits,num_signal):
-        signals = np.empty(num_signal,dtype=QuantumSignal)
-        for _ in range(num_signal):
-            signals[_] =Coherent((-1)**(bits[_])*self.alpha)
-        return signals

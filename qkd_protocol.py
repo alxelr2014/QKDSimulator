@@ -7,14 +7,19 @@ class QKDProtocol:
     def signal_generation(self,):
         pass
 
-    def param_est(self,akey, bkey,frac):
-        key_size = np.size(akey)
-        pub_ind = np.random.choice(key_size,(int)(key_size*frac), replace=False)
-        difference = (akey != bkey)[pub_ind]
-        print(akey, bkey, pub_ind, difference)
-        return np.delete(akey,pub_ind), np.delete(bkey,pub_ind), np.sum(difference)/np.size(pub_ind)     
+    def detection(self,):
+        pass
 
     def sift(self,):
         pass
-    def run_protocol(self,num_signal):
-        pass
+
+    def param_est(self,params):
+        akey = params['akey']
+        bkey = params['bkey']
+        frac = params['frac']
+        key_size = np.size(akey)
+        pub_ind = np.random.choice(key_size,(int)(key_size*frac), replace=False)
+        difference = (akey != bkey)[pub_ind]
+        return {'akey': np.delete(akey,pub_ind), 'bkey':np.delete(bkey,pub_ind), 
+                'qber':np.sum(difference)/np.size(pub_ind)}     
+
