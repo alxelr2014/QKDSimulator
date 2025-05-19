@@ -1,11 +1,8 @@
 from qkd_protocol import *
-from bb84 import *
-from cow import *
-from dps import *
+from quantum_channel import*
 from inforecon import *
 from privamp import *
 import numpy as np
-import matplotlib.pyplot as plt
 import heapq
 
 class Event:
@@ -19,7 +16,7 @@ class Event:
 
 class Simulation:
     def __init__(self,protocol : QKDProtocol, qchannel : QuantumChannel, signal_params,detect_params, num_detectors, darkcount_rate,clk, delay, post_proc,
-                 num_signal = 100):
+                 num_signal = 100, debug = False):
         self.protocol = protocol
         self.qchannel = qchannel
         self.signal_params = signal_params
@@ -34,7 +31,8 @@ class Simulation:
         self.alice_data = []
         self.bob_data = []
         self.current_time = 0
-        self.event_queue = []  
+        self.event_queue = []
+        self.debug = debug
 
     def schedule_event(self, event):
         heapq.heappush(self.event_queue, event)
@@ -43,7 +41,8 @@ class Simulation:
         while self.event_queue:
             event = heapq.heappop(self.event_queue)
             self.current_time = event.time
-            print(f"Time {self.current_time}: Executing {event.description}")
+            if self.debug:
+                print(f"Time {self.current_time}: Executing {event.description}")
             event.action(self.current_time)
         return self.alice_data, self.bob_data
 
@@ -96,88 +95,3 @@ class Simulation:
     
     def priv_amp(self,params):
         return self.post_proc['priv_amp'](params)
-hex_hash_key =    get_random_bytes(16)
-def secure_hash_using_hmac( data):
-    h = HMAC.new(hex_hash_key, digestmod=SHA256)
-    h.update(data)
-    return h.hexdigest()
-
-def bytify(bitvec):
-    return secure_hash_using_hmac(bytes(np.packbits(bitvec)))
-
-def print_result_est(pe):
-    print("############## Parameter Estimation ##############")
-    print('Alice\'s Key: ', bytify(pe['akey']))
-    print('Bob\'s Key:   ', bytify(pe['bkey']))
-    print('QBER: ', pe['qber'])
-    print('Rate: ', np.size(pe['akey'])/pe['num_signal'])
-    print('Number of errors: ', np.sum(np.logical_xor(pe['akey'],pe['bkey'])))
-    print("############################")
-
-def print_result_rec(ir):
-    print("############## Information Reconcillation ##############")
-    print('Alice\'s Key: ', bytify(ir['akey']))
-    print('Bob\'s Key:   ', bytify(ir['bkey']))
-    print('Rate: ', np.size(ir['akey'])/ir['num_signal'])
-    print('Number of errors: ', np.sum(np.logical_xor(ir['akey'],ir['bkey'])))
-    print("############################")
-
-def print_result_amp(pa):
-    print("############## Privacy Amplification ##############")
-    print('Alice\'s Key: ', bytify(pa['akey']))
-    print('Bob\'s Key:   ', bytify(pa['bkey']))
-    print('Rate: ', np.size(pa['akey'])/pa['num_signal'])
-    print('Number of errors: ', np.sum(np.logical_xor(pa['akey'],pa['bkey'])))
-    print("############################")
-
-if __name__ == "__main__":
-    channel_data = {'delay' : 1e-2, 'margin' : 1e-3}
-    attenuation = 0.1
-    signal_params = {'alpha':4,'mu' : 0.1, 'decoy_rate':0.2}
-    est_params = {'frac':0.3}
-    num_detectors = 1
-    darkcount_rate = 1e5
-    clk = 1
-    num_signal = 10000
-    post_proc ={'info_recon':InfoRecon().unsecure,'priv_amp':PrivAmp().univ2}
-    # s = Simulation(protocol=DPS(),
-    #     qchannel= Fiber(0.3),
-    #     signal_params={'alpha':1},
-    #     detect_params={},
-    #     num_detectors=2,
-    #     darkcount_rate=1e1,
-    #     clk=1,
-    #     delay=channel_data['delay'],
-    #     num_signal=100)
-
-    # s = Simulation(protocol=COW(),
-    #     qchannel= Fiber(0.3),
-    #     signal_params={'alpha':1,'decoy_rate':0.2},
-    #     detect_params={'transmitivity':0.9},
-    #     num_detectors=3,
-    #     darkcount_rate=1e1,
-    #     clk=1,
-    #     delay=channel_data['delay'],
-    #     num_signal=100)
-
-    s = Simulation(protocol=BB84(),
-        qchannel= Fiber(attenuation),
-        signal_params=signal_params,
-        detect_params={},
-        num_detectors=num_detectors,
-        darkcount_rate=darkcount_rate,
-        clk=clk,
-        delay=channel_data['delay'],
-        post_proc=post_proc,
-        num_signal=num_signal)
-    s.schedule_event(Event(0,s.start_event,'Start'))
-    alice_data, bob_data = s.run_qkd()
-    keys = s.sifting(alice_data,bob_data,channel_data)
-    pe = s.param_est(keys | est_params)
-    print_result_est(pe | {'num_signal' : num_signal})
-
-    ir = s.info_recon(pe)
-    print_result_rec(ir | {'num_signal' : num_signal} )
-
-    pa = s.priv_amp(ir)
-    print_result_amp(pa | {'num_signal' : num_signal})

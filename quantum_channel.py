@@ -9,8 +9,7 @@ class QuantumChannel:
         raise NotImplementedError("Subclass of QunatumChannel transmits.")
 
 class Fiber(QuantumChannel):
-    def __init__(self,length, gamma =0.2):
-        params = {'length': length,'gamma' : gamma}
+    def __init__(self,params):
         super().__init__(params)
 
     def transmit(self, signal):
