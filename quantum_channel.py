@@ -1,6 +1,5 @@
 import numpy as np
 from quantum_signal import *
-from quantum_channel import *
 
 class QuantumChannel:
     def __init__(self,params):
@@ -10,8 +9,25 @@ class QuantumChannel:
         raise NotImplementedError("Subclass of QunatumChannel transmits.")
 
 class Fiber(QuantumChannel):
-    def transmit(self, signals):
-        return signals
+    def __init__(self,length, gamma =0.2):
+        params = {'length': length,'gamma' : gamma}
+        super().__init__(params)
+
+    def transmit(self, signal):
+        if not isinstance(signal,np.ndarray) and not isinstance(signal,QuantumSignal):
+            raise TypeError("Fiber input are not signal.")
+        if isinstance(signal,np.ndarray):
+            if np.size(signal) == 1 :
+                signal = signal[0]
+            else:
+                raise TypeError("More than one signal is present in the fiber.")
+        if isinstance(signal,QuantumSignal) and  signal.get_type() != SignalType.COHERENT:
+            raise TypeError("Fiber signal is not a coherent signal.")
+        
+        transmitivity = np.exp(-self.params['gamma'] * self.params['length'])
+        out_alpha = np.sqrt(transmitivity)* signal.get_param('alpha')
+
+        return Coherent(out_alpha,signal.get_param('polarization'))
     
 class coh_BeamSplitter(QuantumChannel):
     def __init__(self, transmitivity):

@@ -7,55 +7,63 @@ from qkd_protocol import *
 
 class COW(QKDProtocol):
     def __init__(self):
-        pass
+        self.first = True
+        self.pdecoy = False
+        self.pbit = False
+        self.prev_mline = Coherent(0)
 
     def signal_generation(self,params):
-        num_signal = params['num_signal']
         alpha = params['alpha']
         decoy_rate = params['decoy_rate']
-        decoy = np.random.rand(num_signal) <= decoy_rate
-        bits = np.random.rand(num_signal) <= 1/2
-        signals = np.empty(2*num_signal,dtype=QuantumSignal)
-        for _ in range(num_signal):
-            if bits[_]: 
-                signals[2*_] =Coherent(alpha)
+        if self.first:
+            decoy = np.random.rand() <= decoy_rate
+            bit = np.random.rand() <= 1/2
+            if bit: 
+                signal =Coherent(alpha)
             else:
-                signals[2*_] = Coherent(0)
-            if decoy[_] ^ bits[_]:
-                signals[2*_+1] =Coherent(0)
+                signal = Coherent(0)
+            self.pbit = bit
+            self.pdecoy = decoy
+            self.first = False
+            return {'signal':signal, 'time':params['time'], 'decoy':decoy,'abits':bit}
+        else:
+            if self.pdecoy ^ self.pbit:
+                signal =Coherent(0)
             else: 
-                signals[2*_ + 1] = Coherent(alpha)
-        return {'signals':signals, 'decoy':decoy,'abits':bits}
-
+                signal = Coherent(alpha)
+            self.first = True
+            return {'signal':signal, 'time':params['time'], 'decoy':self.pdecoy,'abits':self.pbit}
+        
     def detection(self,params):
-        num_signal = params['num_signal']
+        if params['dark_count'][0]:
+            return {'d_detector':1,'m0_detector':0,'m1_detector':0,'time':params['time']}
+        if params['dark_count'][1]:
+            return {'d_detector':0,'m0_detector':1,'m1_detector':0,'time':params['time']} 
+        if params['dark_count'][2]:
+            return {'d_detector':0,'m0_detector':0,'m1_detector':1,'time':params['time']} 
         received = params['received']
         transmitivity = params['transmitivity']
 
-        d_counter = np.zeros(2*num_signal)
-        m0_counter = np.zeros(2*num_signal)
-        m1_counter = np.zeros(2*num_signal)
-        prev_mline = Coherent(0)
-        for _ in range(2*num_signal):
-            dmlines = coh_BeamSplitter(transmitivity).transmit(received[_])
-            data_line = dmlines[0]
-            monitor_line = dmlines[1]
-            m_machzender = coh_BeamSplitter(0.5).transmit(monitor_line)
-            inst_line = m_machzender[0]
-            delayed_line = m_machzender[1]
+        dmlines = coh_BeamSplitter(transmitivity).transmit(received)
+        data_line = dmlines[0]
+        monitor_line = dmlines[1]
+        m_machzender = coh_BeamSplitter(0.5).transmit(monitor_line)
+        inst_line = m_machzender[0]
+        delayed_line = m_machzender[1]
 
-            pre_measure_mlines = coh_BeamSplitter(0.5).transmit(np.array([prev_mline,inst_line]))
-            d_counter[_] = PhotonDetector().measure(data_line)
-            m0_counter[_] = PhotonDetector().measure(pre_measure_mlines[0])
-            m1_counter[_] = PhotonDetector().measure(pre_measure_mlines[1])
-            prev_mline = delayed_line
+        pre_measure_mlines = coh_BeamSplitter(0.5).transmit(np.array([self.prev_mline,inst_line]))
+        d_detector = PhotonDetector().measure(data_line)
+        m0_detector = PhotonDetector().measure(pre_measure_mlines[0])
+        m1_detector = PhotonDetector().measure(pre_measure_mlines[1])
+        self.prev_mline = delayed_line
         
-        return {'d_counter':d_counter, 'm0_counter' : m0_counter, 'm1_counter':m1_counter}
+        return {'d_detector':d_detector, 'm0_detector' : m0_detector, 'm1_detector':m1_detector, 'time':params['time']}
 
     def sift(self,aparams, bparams):
-        decoy = aparams['decoy']
-        abits = aparams['abits']
-        d_counter = bparams['d_counter']
+        #TODO: visibility
+        decoy = aparams['decoy'][::2]
+        abits = aparams['abits'][::2]
+        d_detector = bparams['d_detector']
         num_key_bits = np.size(decoy) - np.sum(decoy)
         alice_key = np.empty(num_key_bits) 
         bob_key = np.empty(num_key_bits)
@@ -63,34 +71,6 @@ class COW(QKDProtocol):
         for _ in range(np.size(decoy)):
             if not decoy[_]:
                 alice_key[j] = abits[j]
-                bob_key[j]= d_counter[2*j]
+                bob_key[j]= d_detector[2*j]
                 j += 1
         return {'akey':alice_key,'bkey':bob_key}
-
-    def run_protocol(self,num_signal,frac):
-
-        signals = self.signal_generation(decoy,bits,num_signal)
-  
-
-        
-        
-        # print(decoy.astype(int))
-        # print(bits.astype(int))
-        # print(d_counter.astype(int))
-        # print(m0_counter.astype(int))
-        # print(m1_counter.astype(int))
-
-        alice_key,bob_key = self.sift(decoy,bits,d_counter)
-        # print(alice_key.astype(int))
-        # print(bob_key.astype(int))
-        # print(np.logical_xor(alice_key,bob_key).astype(int))
-        # print(np.sum(np.logical_xor(alice_key,bob_key)))
-        return self.param_est(alice_key,bob_key,frac)
-
-
-
-
-
-    # def param_est(self,decoy,bits,d_counter,m1_counter):
-    #     return 0
-

@@ -25,8 +25,11 @@ class Polarization:
                 self.pol = np.array([1/np.sqrt(2),-1/np.sqrt(2)])
             else:
                 self.pol = np.array([1,0])
+        elif isinstance(pol, Polarization):
+            self.pol = pol.pol
         else:
             self.pol = np.array([1,0])
+        
 
 class QuantumSignal:
     def __init__(self,type,param):
@@ -54,7 +57,18 @@ class Coherent(QuantumSignal):
         def prob_dist(n):
             return poisson(n,np.abs(self.param['alpha'])**2)
         return prob_dist
-        
+
+    def prob00_detection(self,mpol:Polarization):
+        v1 = self.param['polarization'].pol[0]
+        v2 = self.param['polarization'].pol[1]
+        alpha = self.param['alpha']
+
+        u1 = mpol.pol[0]
+        u2 = mpol.pol[1]
+
+        amp1 =np.abs(u1*np.conj(v1)*alpha + u2*np.conj(v2)*alpha)**2
+        amp2 = np.abs(u2*v1*alpha - u1*v2*alpha)**2
+        return [poisson(0, amp1), poisson(0, amp2)] 
     
     def probnm_photon(self,mpol:Polarization): # measure in a different polarization
         def prob_dist(n,m):

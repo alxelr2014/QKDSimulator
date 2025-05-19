@@ -12,10 +12,26 @@ class QuantumMeasurement:
 class PhotonDetector(QuantumMeasurement):
     def __init__(self):
         super().__init__({})
-    def measure(self,signal:QuantumSignal):
-        p = signal.probn_photon()
-        l = float(np.random.rand())
-        return l > p(0)
+    def measure(self,signal:QuantumSignal, pol: Polarization = None):
+        if pol == None:
+            p = signal.probn_photon()
+            l = float(np.random.rand())
+            return l > p(0)
+        else:
+            plist = signal.prob00_detection(pol)
+            probs = [plist[0]*plist[1], (1-plist[0])*plist[1],(1-plist[1])*plist[0],(1-plist[0])*(1-plist[1])]
+            acum = np.add.accumulate(probs)
+            l = float(np.random.rand())
+            if l > acum[1]:
+                if l > acum[2]:
+                    return 1,1
+                return 0,1
+            else:
+                if l > acum[0]:
+                    return 1,0
+                return 0,0
+                
+
     
 class PhotonCounter(QuantumMeasurement):
     def __init__(self):
@@ -49,14 +65,4 @@ class PhotonCounter(QuantumMeasurement):
                 if n > 50:
                     return n,m
             return n,m
-# for i in range(3):
-#     print(PhotonCounter().measure(Coherent(4,PolarizeType.D), Polarization(PolarizeType.A)))
-# def triflatify(n):
-#     k = (int)(np.floor(-1/2 + np.sqrt(1/4 + 2*n)))
-#     t = ((k)*(k+1))//2
-#     m = n - t
-#     return k-m,m
-
-
-
 
