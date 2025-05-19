@@ -73,4 +73,4 @@ class COW(QKDProtocol):
                 alice_key[j] = abits[j]
                 bob_key[j]= d_detector[2*j]
                 j += 1
-        return {'akey':alice_key,'bkey':bob_key}
+        return {'akey':alice_key.astype(int),'bkey':bob_key.astype(int)}

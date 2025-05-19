@@ -56,7 +56,7 @@ class DPS(QKDProtocol):
                 bob_key[key_ind] = 1 - m0_detector[_]
                 key_ind += 1
 
-        return {'akey': alice_key, 'bkey': bob_key}
+        return {'akey': alice_key.astype(int), 'bkey': bob_key.astype(int)}
     
     
     def param_est(self,params):

@@ -60,7 +60,7 @@ class BB84(QKDProtocol):
                     alice_key[j] = apolarization[_]
                     bob_key[j] = bdetector[_][1] == 1
                     j += 1
-        return {'akey': alice_key[:j], 'bkey': bob_key[:j]}
+        return {'akey': alice_key[:j].astype(int), 'bkey': bob_key[:j].astype(int)}
     
 
     def param_est(self,params):
