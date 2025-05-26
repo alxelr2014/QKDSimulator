@@ -20,10 +20,6 @@ class DPS(QKDProtocol):
             return {'m0_detector':1,'m1_detector':0,'time':params['time']}
         if params['dark_count'][1]:
             return {'m0_detector':0,'m1_detector':1,'time':params['time']} 
-        
-        # static variable
-        # if not hasattr(self.detection, "prev_del_line"):
-        #     self.detection.prev_del_line = Coherent(0)
     
         received= params['received']
         cd_lines = coh_BeamSplitter(0.5).transmit(received)

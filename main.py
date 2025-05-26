@@ -7,31 +7,28 @@ import numpy as np
 import matplotlib.pyplot as plt
 from functools import partial
 from multiprocessing import Pool
-# from Crypto.Random import get_random_bytes
-# from Crypto.Hash import HMAC, SHA256
+from Crypto.Random import get_random_bytes
+from Crypto.Hash import HMAC, SHA256
 
-# hex_hash_key =    get_random_bytes(16)
-# def secure_hash_using_hmac( data):
-#     h = HMAC.new(hex_hash_key, digestmod=SHA256)
-#     h.update(data)
-#     return h.hexdigest()
+hex_hash_key = get_random_bytes(16)
+def secure_hash_using_hmac( data):
+    h = HMAC.new(hex_hash_key, digestmod=SHA256)
+    h.update(data)
+    return h.hexdigest()
 
-# def bytify(bitvec):
-#     return secure_hash_using_hmac(bytes(np.packbits(bitvec)))
+def bytify(bitvec):
+    return secure_hash_using_hmac(bytes(np.packbits(bitvec)))
 
 def print_result(pe,n,str):
-    # print("############## "+str+" ##############")
-    # print('Alice\'s Key: ', (pe['akey']))
-    # print('Bob\'s Key:   ', (pe['bkey']))
-    # if 'qber' in pe:
-    #     print('QBER: ', pe['qber'])
-    # print('Rate: ', np.size(pe['akey'])/n)
-    # print('Number of errors: ', np.sum(np.logical_xor(pe['akey'],pe['bkey'])))
-    # print("############################")
-    return np.size(pe['akey'])/n
+    print("############## "+str+" ##############")
+    print('Alice\'s Key: ', (pe['akey']))
+    print('Bob\'s Key:   ', (pe['bkey']))
+    if 'qber' in pe:
+        print('QBER: ', pe['qber'])
+    print('Rate: ', np.size(pe['akey'])/n)
+    print('Number of errors: ', np.sum(np.logical_xor(pe['akey'],pe['bkey'])))
+    print("############################")
 
-def qber(pe,n):
-    return pe['qber'], np.sum(np.logical_xor(pe['akey'],pe['bkey']))/n
 
 def dic_update(dic,key,val):
     for k in dic.keys():
@@ -41,9 +38,30 @@ def dic_update(dic,key,val):
             dic[k] = dic_update(dic[k],key,val)
     return dic
 
-def simulate_vs(v,param,label):
+
+def get_result(pe,ir,pa,num_signal,res_labels):
+    results = np.empty(np.size(res_labels))
+    for i in range(np.size(res_labels)):
+        if res_labels[i] == 'Param Est Rate':
+            results[i] = np.size(pe['akey'])/num_signal
+        elif res_labels[i] == 'Priv Amp Rate':
+            results[i] = np.size(pa['akey'])/num_signal
+        elif res_labels[i] == 'QBER':
+            results[i] = pe['qber'] + 1e-8
+        elif results[i] == 'Param Est Error':
+            results[i] = np.sum(np.logical_xor(pe['akey'],pe['bkey']))/num_signal+1e-8
+        elif results[i] == 'Priv Amp Error':
+            results[i] = np.sum(np.logical_xor(pa['akey'],pa['bkey']))/num_signal+1e-8
+        else:
+            results[i] = -1
+    return results
+
+
+
+
+
+def simulate_vs(v,param,label,res_labels):
     param = dic_update(param,label,v)
-    print(param)
     s = Simulation(protocol=param['protocol'],
     qchannel= param['qchannel'](param['qchannel_params']),
     signal_params=param['signal_params'],
@@ -60,36 +78,37 @@ def simulate_vs(v,param,label):
     alice_data, bob_data = s.run_qkd()
     keys = s.sifting(alice_data,bob_data,param['channel_data'])
     pe = s.param_est(keys | param['est_params'])
-    param_rate = print_result(pe , param['num_signal'], 'Parameter Estimation')
 
     ir = s.info_recon(pe)
-    print_result(ir , param['num_signal'], 'Information Reconcilliation' )
 
     pa = s.priv_amp(ir | param['priv_params'])
-    priv_rate = print_result(pa , param['num_signal'], 'Privacy Amplification')
-    return qber(pe,param['num_signal'])
-    # return param_rate, priv_rate
 
-def plot_rate_vs(params,var,var_range,num_proc,filename = 'test'):
-    param_rate = np.empty(params['num_simulations'],dtype=np.ndarray)
-    priv_rate = np.empty(params['num_simulations'],dtype=np.ndarray)
+    # print_result(pe , param['num_signal'], 'Parameter Estimation')
+    # print_result(ir , param['num_signal'], 'Information Reconcilliation' )
+    # priv_rate = print_result(pa , param['num_signal'], 'Privacy Amplification')
+    return get_result(pe,ir,pa,param['num_signal'],res_labels)
+
+
+def get_data(params,var_labels,var_range,num_proc,res_labels):
+    results = np.empty(params['num_simulations'],dtype=np.ndarray)
     for _ in range(params['num_simulations']):
         with Pool(num_proc) as p:
-            rates = p.map(partial(simulate_vs, param=params,label=var), var_range)
-        new_est_rate, new_amp_rate = zip(*rates)
-        param_rate[_] =np.array(new_est_rate)
-        priv_rate[_] = np.array(new_amp_rate)
-    
-    param_rate = np.average(param_rate,axis=0)
-    priv_rate = np.average(priv_rate, axis=0)
-        
-    fig, ax = plt.subplots()
-    ax.plot(var_range, param_rate, label = 'QBER')
-    ax.plot(var_range,priv_rate, label = 'Error rate')
+            results[_] = np.array(p.map(partial(simulate_vs, param=params,label=var_labels, res_labels=res_labels), var_range))
+        print('Done with ', _)
+    results= np.average(results,axis=0)
+    return results
 
-    ax.set(xlabel=var, ylabel='Error',
-        title='Rates vs ' + var)
-    ax.set_ylim(0.0,0.6)
+def plot_rate_vs(params,var_label,var_range,num_proc,res_labels,xlabel, ylabel,title,logarithmic = False, filename = 'test'):
+    results = get_data(params,var_label,var_range,num_proc,res_labels)
+
+    fig, ax = plt.subplots()
+    ax.plot(var_range, results, label = res_labels)
+
+    ax.set(xlabel=xlabel, ylabel=ylabel, title= title)
+    if logarithmic:
+        ax.set_yscale('log')
+    else:
+        ax.set_ylim(0.0,0.6)
     ax.grid()
     ax.legend(loc='upper left')
 
@@ -103,40 +122,28 @@ if __name__ == "__main__":
         'protocol' : DPS(),
         'qchannel' : Fiber,
         'qchannel_params': {'length' : 1, 'gamma' : 0.2},
-        'signal_params' : {'alpha':0.6,'mu' : 0.1, 'decoy_rate':0.2},
+        'signal_params' : {'alpha':2,'mu' : 0.1, 'decoy_rate':0.2},
         'detect_params' : {'transmitivity': 0.9},
         'num_detectors' : 2,
-        'darkcount_rate': 10,
+        'darkcount_rate': 0,
         'clk' : 1,
         'channel_data': {'delay' : 1e-2, 'margin' : 1e-3},
         'est_params': {'frac':0.3},
         'post_proc': {'info_recon':InfoRecon().unsecure,'priv_amp':PrivAmp().univ2},
         'priv_params':{'final_key_length':32, 'family_size':256},
         'num_signal': 1000,
-        'num_simulations':12,
+        'num_simulations':10,
         'debug':False
     }
-    plot_rate_vs(param,'length',np.linspace(0.1,2,10),None,'lenght cow error')
+    plot_rate_vs(
+        params=param,
+        var_label='darkcount_rate',
+        var_range=np.linspace(0.1,1,10),
+        num_proc=1,
+        res_labels=['QBER','Param Est Error','Priv Amp Error'],
+        xlabel='Dark Count (dps)',
+        ylabel='Error rates',
+        title='Dark count vs Error Rates',
+        logarithmic=True,
+        filename='darkcount dps error+')
 
-    
-
-
-# s = Simulation(protocol=DPS(),
-    #     qchannel= Fiber(0.3),
-    #     signal_params={'alpha':1},
-    #     detect_params={},
-    #     num_detectors=2,
-    #     darkcount_rate=1e1,
-    #     clk=1,
-    #     delay=channel_data['delay'],
-    #     num_signal=100)
-
-    # s = Simulation(protocol=COW(),
-    #     qchannel= Fiber(0.3),
-    #     signal_params={'alpha':1,'decoy_rate':0.2},
-    #     detect_params={'transmitivity':0.9},
-    #     num_detectors=3,
-    #     darkcount_rate=1e1,
-    #     clk=1,
-    #     delay=channel_data['delay'],
-    #     num_signal=100)
