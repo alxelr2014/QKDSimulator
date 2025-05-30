@@ -1,8 +1,7 @@
 import numpy as np
-from quantum_signal import *
-from quantum_channel import *
-from quantum_measurement import *
-from qkd_protocol import *
+from ..qstate import Coherent
+from ..qdevices import BeamSplitter,PhotonDetector
+from .qkd_protocol import QKDProtocol
 
 
 class DPS(QKDProtocol):
@@ -22,10 +21,10 @@ class DPS(QKDProtocol):
             return {'m0_detector':0,'m1_detector':1,'time':params['time']} 
     
         received= params['received']
-        cd_lines = coh_BeamSplitter(0.5).transmit(received)
+        cd_lines = BeamSplitter(0.5).transmit(received)
         curr_line = cd_lines[0]
         del_lin = cd_lines[1]
-        measure_lines = coh_BeamSplitter(0.5).transmit(np.array([curr_line,self.prev_del_line]))
+        measure_lines = BeamSplitter(0.5).transmit(np.array([curr_line,self.prev_del_line]))
         m0_detector = PhotonDetector().measure(measure_lines[0])
         m1_detector = PhotonDetector().measure(measure_lines[1])
         self.prev_del_line = del_lin

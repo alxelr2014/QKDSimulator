@@ -1,9 +1,8 @@
 import numpy as np
-from quantum_signal import *
-from quantum_channel import *
-from quantum_measurement import *
-from qkd_protocol import *
-
+import numpy as np
+from ..qstate import Coherent
+from ..qdevices import BeamSplitter,PhotonDetector
+from .qkd_protocol import QKDProtocol
 
 class COW(QKDProtocol):
     def __init__(self):
@@ -44,14 +43,14 @@ class COW(QKDProtocol):
         received = params['received']
         transmitivity = params['transmitivity']
 
-        dmlines = coh_BeamSplitter(transmitivity).transmit(received)
+        dmlines = BeamSplitter(transmitivity).transmit(received)
         data_line = dmlines[0]
         monitor_line = dmlines[1]
-        m_machzender = coh_BeamSplitter(0.5).transmit(monitor_line)
+        m_machzender = BeamSplitter(0.5).transmit(monitor_line)
         inst_line = m_machzender[0]
         delayed_line = m_machzender[1]
 
-        pre_measure_mlines = coh_BeamSplitter(0.5).transmit(np.array([self.prev_mline,inst_line]))
+        pre_measure_mlines = BeamSplitter(0.5).transmit(np.array([self.prev_mline,inst_line]))
         d_detector = PhotonDetector().measure(data_line)
         m0_detector = PhotonDetector().measure(pre_measure_mlines[0])
         m1_detector = PhotonDetector().measure(pre_measure_mlines[1])

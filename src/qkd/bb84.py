@@ -1,9 +1,8 @@
 import numpy as np
-from quantum_signal import *
-from quantum_channel import *
-from quantum_measurement import *
-from qkd_protocol import *
-
+import numpy as np
+from ..qstate import Coherent,PolarizeType,Polarization
+from ..qdevices import PhotonDetector
+from .qkd_protocol import QKDProtocol
 
 class BB84(QKDProtocol):
     def __init__(self):

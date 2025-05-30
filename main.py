@@ -1,14 +1,17 @@
-from bb84 import *
-from cow import *
-from dps import *
-from simulation import *
-
 import numpy as np
 import matplotlib.pyplot as plt
 from functools import partial
 from multiprocessing import Pool
 from Crypto.Random import get_random_bytes
 from Crypto.Hash import HMAC, SHA256
+from tqdm import tqdm
+
+
+from src.qkd import DPS,BB84,COW
+from src.postproc.inforecon import InfoRecon
+from src.postproc.privamp import PrivAmp
+from src.qdevices import Fiber
+from src.simulator import Simulation,Event
 
 hex_hash_key = get_random_bytes(16)
 def secure_hash_using_hmac( data):
@@ -48,10 +51,11 @@ def get_result(pe,ir,pa,num_signal,res_labels):
             results[i] = np.size(pa['akey'])/num_signal
         elif res_labels[i] == 'QBER':
             results[i] = pe['qber'] + 1e-8
-        elif results[i] == 'Param Est Error':
+        elif res_labels[i] == 'Param Est Error':
             results[i] = np.sum(np.logical_xor(pe['akey'],pe['bkey']))/num_signal+1e-8
-        elif results[i] == 'Priv Amp Error':
+        elif res_labels[i] == 'Priv Amp Error':
             results[i] = np.sum(np.logical_xor(pa['akey'],pa['bkey']))/num_signal+1e-8
+    
         else:
             results[i] = -1
     return results
@@ -91,10 +95,9 @@ def simulate_vs(v,param,label,res_labels):
 
 def get_data(params,var_labels,var_range,num_proc,res_labels):
     results = np.empty(params['num_simulations'],dtype=np.ndarray)
-    for _ in range(params['num_simulations']):
+    for _ in tqdm(range(params['num_simulations'])):
         with Pool(num_proc) as p:
             results[_] = np.array(p.map(partial(simulate_vs, param=params,label=var_labels, res_labels=res_labels), var_range))
-        print('Done with ', _)
     results= np.average(results,axis=0)
     return results
 
@@ -125,9 +128,9 @@ if __name__ == "__main__":
         'signal_params' : {'alpha':2,'mu' : 0.1, 'decoy_rate':0.2},
         'detect_params' : {'transmitivity': 0.9},
         'num_detectors' : 2,
-        'darkcount_rate': 0,
+        'darkcount_rate': 1e-4,
         'clk' : 1,
-        'channel_data': {'delay' : 1e-2, 'margin' : 1e-3},
+        'channel_data': {'delay' :  1e-2, 'margin' : 1e-3},
         'est_params': {'frac':0.3},
         'post_proc': {'info_recon':InfoRecon().unsecure,'priv_amp':PrivAmp().univ2},
         'priv_params':{'final_key_length':32, 'family_size':256},
@@ -139,7 +142,7 @@ if __name__ == "__main__":
         params=param,
         var_label='darkcount_rate',
         var_range=np.linspace(0.1,1,10),
-        num_proc=1,
+        num_proc=None,
         res_labels=['QBER','Param Est Error','Priv Amp Error'],
         xlabel='Dark Count (dps)',
         ylabel='Error rates',
