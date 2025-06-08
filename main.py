@@ -122,31 +122,31 @@ def plot_rate_vs(params,var_label,var_range,num_proc,res_labels,xlabel, ylabel,t
 
 if __name__ == "__main__":
     param = {
-        'protocol' : DPS(),
+        'protocol' : BB84(),
         'qchannel' : Fiber,
-        'qchannel_params': {'length' : 1, 'gamma' : 0.2},
-        'signal_params' : {'alpha':2,'mu' : 0.1, 'decoy_rate':0.2},
+        'qchannel_params': {'length' : 2, 'gamma' : 0.2},
+        'signal_params' : {'alpha':0.3,'mu' : 0.1, 'decoy_rate':0.5},
         'detect_params' : {'transmitivity': 0.9},
-        'num_detectors' : 2,
+        'num_detectors' : 1,
         'darkcount_rate': 1e-4,
         'clk' : 1,
         'channel_data': {'delay' :  1e-2, 'margin' : 1e-3},
         'est_params': {'frac':0.3},
         'post_proc': {'info_recon':InfoRecon().unsecure,'priv_amp':PrivAmp().univ2},
         'priv_params':{'final_key_length':32, 'family_size':256},
-        'num_signal': 1000,
-        'num_simulations':10,
+        'num_signal': 10000,
+        'num_simulations':100,
         'debug':False
     }
     plot_rate_vs(
         params=param,
-        var_label='darkcount_rate',
-        var_range=np.linspace(0.1,1,10),
+        var_label='length',
+        var_range=np.linspace(0,10,20),
         num_proc=None,
-        res_labels=['QBER','Param Est Error','Priv Amp Error'],
-        xlabel='Dark Count (dps)',
-        ylabel='Error rates',
-        title='Dark count vs Error Rates',
+        res_labels=['Param Est Rate'],
+        xlabel='Length (km)',
+        ylabel='Secret Key Rate',
+        title='Length vs Secret Key Rates',
         logarithmic=True,
-        filename='darkcount dps error+')
+        filename='length bb84 rate')
 
