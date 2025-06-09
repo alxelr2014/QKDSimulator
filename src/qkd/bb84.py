@@ -57,7 +57,7 @@ class BB84(QKDProtocol):
             if not decoy[_]:
                 if apol_basis[_] == bpol_basis[_]:
                     alice_key[j] = apolarization[_]
-                    bob_key[j] = bdetector[_][1] == 1
+                    bob_key[j] = bdetector[_][1] == 0
                     j += 1
         return {'akey': alice_key[:j].astype(int), 'bkey': bob_key[:j].astype(int)}
     

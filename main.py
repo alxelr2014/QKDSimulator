@@ -52,9 +52,9 @@ def get_result(pe,ir,pa,num_signal,res_labels):
         elif res_labels[i] == 'QBER':
             results[i] = pe['qber'] + 1e-8
         elif res_labels[i] == 'Param Est Error':
-            results[i] = np.sum(np.logical_xor(pe['akey'],pe['bkey']))/np.size(pe['akey'])+1e-8
+            results[i] = np.sum(np.logical_xor(pe['akey'],pe['bkey']))/np.size(pe['akey'])
         elif res_labels[i] == 'Priv Amp Error':
-            results[i] = np.sum(np.logical_xor(pa['akey'],pa['bkey']))/np.size(pa['akey'])+1e-8
+            results[i] = np.sum(np.logical_xor(pa['akey'],pa['bkey']))/np.size(pa['akey'])+1e-2
     
         else:
             results[i] = -1
@@ -111,7 +111,7 @@ def plot_rate_vs(params,var_label,var_range,num_proc,res_labels,xlabel, ylabel,t
     if logarithmic:
         ax.set_yscale('log')
     else:
-        ax.set_ylim(0.0,0.6)
+        ax.set_ylim(0.0,1)
     ax.grid()
     ax.legend(loc='upper left')
 
@@ -122,31 +122,31 @@ def plot_rate_vs(params,var_label,var_range,num_proc,res_labels,xlabel, ylabel,t
 
 if __name__ == "__main__":
     param = {
-        'protocol' : COW(),
+        'protocol' : BB84(),
         'qchannel' : Fiber,
         'qchannel_params': {'length' : 2, 'gamma' : 0.2},
         'signal_params' : {'alpha':0.7,'mu' : 0.1, 'decoy_rate':0.5},
         'detect_params' : {'transmitivity': 0.9},
-        'num_detectors' : 3,
-        'darkcount_rate': 1e-1,
+        'num_detectors' : 1,
+        'darkcount_rate': 1e0,
         'clk' : 1,
         'channel_data': {'delay' :  1e-2, 'margin' : 1e-3},
         'est_params': {'frac':0.3},
         'post_proc': {'info_recon':InfoRecon().unsecure,'priv_amp':PrivAmp().univ2},
         'priv_params':{'final_key_length':32, 'family_size':256},
         'num_signal': 10000,
-        'num_simulations':100,
+        'num_simulations':30,
         'debug':False
     }
     plot_rate_vs(
         params=param,
-        var_label='dakrcount_rate',
-        var_range=np.linspace(1e-3,1,20),
+        var_label='alpha',
+        var_range=np.linspace(0.1,1.5,20),
         num_proc=None,
-        res_labels=['QBER', 'Param Est Error'],
-        xlabel='Darkcount (Hz)',
+        res_labels=['QBER', 'Param Est Error','Priv Amp Error'],
+        xlabel='Alpha',
         ylabel='Error Probability',
-        title='Darkcount vs Error Probability',
+        title='Alpha vs Error Probability',
         logarithmic=False,
-        filename='Darkcount cow error')
+        filename='alpha bb84 error')
 
