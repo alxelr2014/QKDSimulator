@@ -52,9 +52,9 @@ def get_result(pe,ir,pa,num_signal,res_labels):
         elif res_labels[i] == 'QBER':
             results[i] = pe['qber'] + 1e-8
         elif res_labels[i] == 'Param Est Error':
-            results[i] = np.sum(np.logical_xor(pe['akey'],pe['bkey']))/num_signal+1e-8
+            results[i] = np.sum(np.logical_xor(pe['akey'],pe['bkey']))/np.size(pe['akey'])+1e-8
         elif res_labels[i] == 'Priv Amp Error':
-            results[i] = np.sum(np.logical_xor(pa['akey'],pa['bkey']))/num_signal+1e-8
+            results[i] = np.sum(np.logical_xor(pa['akey'],pa['bkey']))/np.size(pa['akey'])+1e-8
     
         else:
             results[i] = -1
@@ -122,13 +122,13 @@ def plot_rate_vs(params,var_label,var_range,num_proc,res_labels,xlabel, ylabel,t
 
 if __name__ == "__main__":
     param = {
-        'protocol' : BB84(),
+        'protocol' : COW(),
         'qchannel' : Fiber,
         'qchannel_params': {'length' : 2, 'gamma' : 0.2},
-        'signal_params' : {'alpha':0.3,'mu' : 0.1, 'decoy_rate':0.5},
+        'signal_params' : {'alpha':0.7,'mu' : 0.1, 'decoy_rate':0.5},
         'detect_params' : {'transmitivity': 0.9},
-        'num_detectors' : 1,
-        'darkcount_rate': 1e-4,
+        'num_detectors' : 3,
+        'darkcount_rate': 1e-1,
         'clk' : 1,
         'channel_data': {'delay' :  1e-2, 'margin' : 1e-3},
         'est_params': {'frac':0.3},
@@ -140,13 +140,13 @@ if __name__ == "__main__":
     }
     plot_rate_vs(
         params=param,
-        var_label='length',
-        var_range=np.linspace(0,10,20),
+        var_label='dakrcount_rate',
+        var_range=np.linspace(1e-3,1,20),
         num_proc=None,
-        res_labels=['Param Est Rate'],
-        xlabel='Length (km)',
-        ylabel='Secret Key Rate',
-        title='Length vs Secret Key Rates',
-        logarithmic=True,
-        filename='length bb84 rate')
+        res_labels=['QBER', 'Param Est Error'],
+        xlabel='Darkcount (Hz)',
+        ylabel='Error Probability',
+        title='Darkcount vs Error Probability',
+        logarithmic=False,
+        filename='Darkcount cow error')
 
