@@ -7,7 +7,7 @@ from Crypto.Hash import HMAC, SHA256
 from tqdm import tqdm
 
 
-from src.qkd import DPS,BB84,COW
+from src.qkd import DPS,BB84,COW,COW2
 from src.postproc.inforecon import InfoRecon
 from src.postproc.privamp import PrivAmp
 from src.qdevices import Fiber
@@ -80,6 +80,7 @@ def simulate_vs(v,param,label,res_labels):
 
     s.schedule_event(Event(0,s.start_event,'Start'))
     alice_data, bob_data = s.run_qkd()
+
     keys = s.sifting(alice_data,bob_data,param['channel_data'])
     pe = s.param_est(keys | param['est_params'])
 
@@ -89,7 +90,8 @@ def simulate_vs(v,param,label,res_labels):
 
     # print_result(pe , param['num_signal'], 'Parameter Estimation')
     # print_result(ir , param['num_signal'], 'Information Reconcilliation' )
-    # priv_rate = print_result(pa , param['num_signal'], 'Privacy Amplification')
+    # print_result(pa , param['num_signal'], 'Privacy Amplification')
+    
     return get_result(pe,ir,pa,param['num_signal'],res_labels)
 
 
@@ -122,31 +124,31 @@ def plot_rate_vs(params,var_label,var_range,num_proc,res_labels,xlabel, ylabel,t
 
 if __name__ == "__main__":
     param = {
-        'protocol' : BB84(),
+        'protocol' : COW2(),
         'qchannel' : Fiber,
         'qchannel_params': {'length' : 2, 'gamma' : 0.2},
-        'signal_params' : {'alpha':0.7,'mu' : 0.1, 'decoy_rate':0.5},
+        'signal_params' : {'alpha':3,'mu' : 0.1, 'decoy_rate':0.25},
         'detect_params' : {'transmitivity': 0.9},
-        'num_detectors' : 1,
-        'darkcount_rate': 1e0,
+        'num_detectors' : 3,
+        'darkcount_rate': 1e1,
         'clk' : 1,
         'channel_data': {'delay' :  1e-2, 'margin' : 1e-3},
         'est_params': {'frac':0.3},
         'post_proc': {'info_recon':InfoRecon().unsecure,'priv_amp':PrivAmp().univ2},
         'priv_params':{'final_key_length':32, 'family_size':256},
-        'num_signal': 10000,
-        'num_simulations':30,
+        'num_signal': 30,
+        'num_simulations':1,
         'debug':False
     }
     plot_rate_vs(
         params=param,
-        var_label='alpha',
-        var_range=np.linspace(0.1,1.5,20),
+        var_label='lenfth',
+        var_range= np.linspace(1,10,20),
         num_proc=None,
         res_labels=['QBER', 'Param Est Error','Priv Amp Error'],
         xlabel='Alpha',
         ylabel='Error Probability',
         title='Alpha vs Error Probability',
         logarithmic=False,
-        filename='alpha bb84 error')
+        filename='length cow2 error')
 

@@ -3,7 +3,7 @@ from ..qstate import Coherent
 from ..qdevices import BeamSplitter,PhotonDetector
 from .qkd_protocol import QKDProtocol
 
-class COW(QKDProtocol):
+class COW2(QKDProtocol):
     def __init__(self):
         self.first = True
         self.pdecoy = False
@@ -16,19 +16,19 @@ class COW(QKDProtocol):
         if self.first:
             decoy = np.random.rand() <= decoy_rate
             bit = np.random.rand() <= 1/2
-            if bit: 
-                signal =Coherent(alpha)
-            else:
-                signal = Coherent(0)
+            if decoy ^ bit:
+                signal =Coherent(0)
+            else: 
+                signal = Coherent(alpha)
             self.pbit = bit
             self.pdecoy = decoy
             self.first = False
             return {'signal':signal, 'time':params['time'], 'decoy':decoy,'abits':bit}
         else:
-            if self.pdecoy ^ self.pbit:
-                signal =Coherent(0)
-            else: 
-                signal = Coherent(alpha)
+            if self.pbit: 
+                signal =Coherent(alpha)
+            else:
+                signal = Coherent(0)
             self.first = True
             return {'signal':signal, 'time':params['time'], 'decoy':self.pdecoy,'abits':self.pbit}
         
@@ -58,10 +58,11 @@ class COW(QKDProtocol):
         return {'d_detector':d_detector, 'm0_detector' : m0_detector, 'm1_detector':m1_detector, 'time':params['time']}
 
     def sift(self,aparams, bparams):
-        #TODO: visibility
         decoy = aparams['decoy'][::2]
         abits = aparams['abits'][::2]
         d_detector = bparams['d_detector']
+        m0_detect = np.sum(bparams['m0_detector'])
+        m1_detect = np.sum(bparams['m1_detector'])
         num_key_bits = np.size(decoy) - np.sum(decoy)
         alice_key = np.empty(num_key_bits) 
         bob_key = np.empty(num_key_bits)
@@ -69,6 +70,6 @@ class COW(QKDProtocol):
         for _ in range(np.size(decoy)):
             if not decoy[_]:
                 alice_key[j] = abits[_]
-                bob_key[j]= d_detector[2*_]
+                bob_key[j]= d_detector[2*_+1]
                 j += 1
-        return {'akey':alice_key.astype(int),'bkey':bob_key.astype(int)}
+        return {'akey':alice_key.astype(int),'bkey':bob_key.astype(int),'visibility':(m0_detect - m1_detect)/(m0_detect + m1_detect)}
