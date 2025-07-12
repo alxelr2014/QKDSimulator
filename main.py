@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 
 from src.qkd import DPS,BB84,COW,COW2
-from src.postproc.inforecon import InfoRecon
+from src.postproc.ldpc import LDPC
 from src.postproc.privamp import PrivAmp
 from src.qdevices import Fiber
 from src.simulator import Simulation,Event
@@ -55,6 +55,8 @@ def get_result(pe,ir,pa,num_signal,res_labels):
             results[i] = np.sum(np.logical_xor(pe['akey'],pe['bkey']))/np.size(pe['akey'])
         elif res_labels[i] == 'Priv Amp Error':
             results[i] = np.sum(np.logical_xor(pa['akey'],pa['bkey']))/np.size(pa['akey'])+1e-2
+        elif res_labels[i]== 'Info Recon Error':
+            results[i] =  np.sum(np.logical_xor(ir['akey'],ir['bkey']))/np.size(pa['akey'])+1e-2
     
         else:
             results[i] = -1
@@ -84,7 +86,7 @@ def simulate_vs(v,param,label,res_labels):
     keys = s.sifting(alice_data,bob_data,param['channel_data'])
     pe = s.param_est(keys | param['est_params'])
 
-    ir = s.info_recon(pe)
+    ir = s.info_recon(pe | param['info_recon'])
 
     pa = s.priv_amp(ir | param['priv_params'])
 
@@ -127,28 +129,29 @@ if __name__ == "__main__":
         'protocol' : COW2(),
         'qchannel' : Fiber,
         'qchannel_params': {'length' : 2, 'gamma' : 0.2},
-        'signal_params' : {'alpha':3,'mu' : 0.1, 'decoy_rate':0.25},
+        'signal_params' : {'alpha':1,'mu' : 0.1, 'decoy_rate':0.25},
         'detect_params' : {'transmitivity': 0.9},
         'num_detectors' : 3,
         'darkcount_rate': 1e1,
         'clk' : 1,
         'channel_data': {'delay' :  1e-2, 'margin' : 1e-3},
         'est_params': {'frac':0.3},
-        'post_proc': {'info_recon':InfoRecon().unsecure,'priv_amp':PrivAmp().univ2},
+        'post_proc': {'info_recon':LDPC(4000).run,'priv_amp':PrivAmp().univ2},
+        'info_recon': {'fstart' : 1.0, 'num_tries':1,'show':0, 'discl_k':1},
         'priv_params':{'final_key_length':32, 'family_size':256},
-        'num_signal': 30,
-        'num_simulations':1,
+        'num_signal': 2000,
+        'num_simulations':2,
         'debug':False
     }
     plot_rate_vs(
         params=param,
-        var_label='lenfth',
-        var_range= np.linspace(1,10,20),
+        var_label='length',
+        var_range= [5,10],#np.linspace(1,10,20),
         num_proc=None,
-        res_labels=['QBER', 'Param Est Error','Priv Amp Error'],
-        xlabel='Alpha',
+        res_labels=['QBER', 'Param Est Error','Info Recon Error'],
+        xlabel='Lenght',
         ylabel='Error Probability',
-        title='Alpha vs Error Probability',
+        title='Length vs Error Probability',
         logarithmic=False,
         filename='length cow2 error')
 

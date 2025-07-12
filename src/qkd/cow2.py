@@ -72,4 +72,4 @@ class COW2(QKDProtocol):
                 alice_key[j] = abits[_]
                 bob_key[j]= d_detector[2*_+1]
                 j += 1
-        return {'akey':alice_key.astype(int),'bkey':bob_key.astype(int),'visibility':(m0_detect - m1_detect)/(m0_detect + m1_detect)}
+        return {'akey':alice_key.astype(int),'bkey':bob_key.astype(int),'visibility':(m0_detect - m1_detect,m0_detect + m1_detect)}
